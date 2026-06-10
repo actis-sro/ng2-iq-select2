@@ -1,7 +1,8 @@
 import {AfterViewInit, Component, ElementRef, EventEmitter, forwardRef, Input, OnDestroy, Output, TemplateRef, ViewChild} from '@angular/core';
+import {CommonModule} from '@angular/common';
 import {IqSelect2Item} from './iq-select2-item';
 import {IqSelect2ResultsComponent} from '../iq-select2-results/iq-select2-results.component';
-import {ControlValueAccessor, NG_VALUE_ACCESSOR, UntypedFormControl} from '@angular/forms';
+import {ControlValueAccessor, NG_VALUE_ACCESSOR, UntypedFormControl, ReactiveFormsModule} from '@angular/forms';
 import {Observable, of} from 'rxjs';
 import {debounceTime, distinctUntilChanged, filter, map, mergeMap, switchMap, tap} from 'rxjs/operators';
 import Messages from "./messages";
@@ -20,7 +21,9 @@ const KEY_CODE_DELETE = 'Delete';
     provide: NG_VALUE_ACCESSOR,
     useExisting: forwardRef(() => IqSelect2Component),
     multi: true
-  }]
+  }],
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule, IqSelect2ResultsComponent]
 })
 export class IqSelect2Component implements AfterViewInit, ControlValueAccessor, OnDestroy {
 

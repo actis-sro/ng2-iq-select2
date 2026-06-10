@@ -9,7 +9,8 @@ import {IqSelect2Component} from '../../projects/ng2-iq-select2/src/lib/iq-selec
 @Component({
     selector: 'app-root',
     templateUrl: './app.component.html',
-    styleUrls: ['./app.component.css']
+    styleUrls: ['./app.component.css'],
+    standalone: false
 })
 export class AppComponent implements OnInit {
     public form: UntypedFormGroup;

@@ -74,7 +74,8 @@ describe('IqSelect2TemplateDirective', () => {
                 </div>
             </iq-select2>
         </form>
-    `
+    `,
+    standalone: false
 })
 class TestHostComponent implements OnInit {
 

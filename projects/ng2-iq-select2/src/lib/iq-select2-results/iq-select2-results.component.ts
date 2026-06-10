@@ -1,11 +1,14 @@
 import {Component, ElementRef, EventEmitter, Input, OnInit, Output, TemplateRef, ViewChild} from '@angular/core';
+import {CommonModule} from '@angular/common';
 import {IqSelect2Item} from '../iq-select2/iq-select2-item';
 import Messages from "../iq-select2/messages";
 
 @Component({
   selector: 'iq-select2-results',
   templateUrl: './iq-select2-results.component.html',
-  styleUrls: ['./iq-select2-results.component.css']
+  styleUrls: ['./iq-select2-results.component.css'],
+  standalone: true,
+  imports: [CommonModule]
 })
 export class IqSelect2ResultsComponent implements OnInit {
 

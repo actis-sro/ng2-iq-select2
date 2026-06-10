@@ -954,7 +954,8 @@ describe('IqSelect2Component', () => {
         <form [formGroup]="fg">
             <iq-select2 formControlName="country" [minimumInputLength]="0"></iq-select2>
         </form>
-    `
+    `,
+    standalone: false
 })
 class TestHostComponent implements OnInit {
 
