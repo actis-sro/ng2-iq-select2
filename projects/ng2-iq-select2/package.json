@@ -1,10 +1,10 @@
 {
   "name": "ng2-iq-select2-exe",
   "repository": "actis-sro/ng2-iq-select2",
-  "version": "19.2.25",
+  "version": "20.3.25",
   "peerDependencies": {
-    "@angular/common": "^19.2.25",
-    "@angular/core": "^19.2.25"
+    "@angular/common": "^20.3.25",
+    "@angular/core": "^20.3.25"
   },
   "dependencies": {
     "tslib": "^2.3.0"
