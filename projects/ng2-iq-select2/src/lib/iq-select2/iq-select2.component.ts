@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, ElementRef, EventEmitter, forwardRef, Input, OnDestroy, Output, TemplateRef, ViewChild} from '@angular/core';
+import {AfterViewInit, ChangeDetectorRef, Component, ElementRef, EventEmitter, forwardRef, inject, Input, OnDestroy, Output, TemplateRef, ViewChild} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {IqSelect2Item} from './iq-select2-item';
 import {IqSelect2ResultsComponent} from '../iq-select2-results/iq-select2-results.component';
@@ -69,6 +69,8 @@ export class IqSelect2Component implements AfterViewInit, ControlValueAccessor, 
   onTouchedCallback: () => void = () => false
   onChangeCallback: (_: any) => void = () => false;
 
+  private cdr = inject(ChangeDetectorRef);
+
   constructor() {
   }
 
@@ -125,7 +127,10 @@ export class IqSelect2Component implements AfterViewInit, ControlValueAccessor, 
       switchMap(term => this.loadDataFromObservable(term)),
       map(items => items.filter(item => !(this.multiple && this.alreadySelected(item)))),
       tap(() => this.resultsVisible = this.searchFocused)
-    ).subscribe((items) => this.listData = items);
+    ).subscribe((items) => {
+      this.listData = items;
+      this.cdr.markForCheck();
+    });
   }
 
   private loadDataFromObservable(term: string): Observable<IqSelect2Item[]> {
@@ -195,6 +200,7 @@ export class IqSelect2Component implements AfterViewInit, ControlValueAccessor, 
 
       this.selectedProvider(uniqueIds).subscribe((items: any[]) => {
         this.selectedItems = items.map(this.iqSelect2ItemAdapter);
+        this.cdr.markForCheck();
       });
     }
   }
@@ -207,6 +213,7 @@ export class IqSelect2Component implements AfterViewInit, ControlValueAccessor, 
           this.selectedItems = [iqSelect2Item];
           this.placeholderSelected = iqSelect2Item.text;
         });
+        this.cdr.markForCheck();
       });
     }
   }
