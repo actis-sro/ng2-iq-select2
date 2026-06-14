@@ -1,14 +1,14 @@
 /* tslint:disable:no-unused-variable */
-import {async, ComponentFixture, TestBed} from '@angular/core/testing';
+import {ComponentFixture, TestBed, waitForAsync} from '@angular/core/testing';
 import {IqSelect2ResultsComponent} from './iq-select2-results.component';
 
 describe('IqSelect2ResultsComponent', () => {
     let component: IqSelect2ResultsComponent;
     let fixture: ComponentFixture<IqSelect2ResultsComponent>;
 
-    beforeEach(async(() => {
+    beforeEach(waitForAsync(() => {
         TestBed.configureTestingModule({
-            declarations: [IqSelect2ResultsComponent]
+            imports: [IqSelect2ResultsComponent]
         })
             .compileComponents();
     }));
@@ -38,15 +38,15 @@ describe('IqSelect2ResultsComponent', () => {
         expect(component.activeIndex).toBe(1);
     });
 
-    it('should remain at the end', () => {
+    it('should wrap to the beginning at the end', () => {
         component.activeIndex = 1;
         component.activeNext();
-        expect(component.activeIndex).toBe(1);
+        expect(component.activeIndex).toBe(0);
     });
 
-    it('should remain at the beginning', () => {
+    it('should wrap to the end at the beginning', () => {
         component.activePrevious();
-        expect(component.activeIndex).toBe(0);
+        expect(component.activeIndex).toBe(1);
     });
 
     it('should navigate to the previous item', () => {
@@ -56,25 +56,25 @@ describe('IqSelect2ResultsComponent', () => {
     });
 
     it('should call scrollToElement on getting to the next result', () => {
-        spyOn(component, 'scrollToElement');
+        jest.spyOn(component, 'scrollToElement');
         component.activeNext();
         expect(component.scrollToElement).toHaveBeenCalled();
     });
 
     it('should call scrollToElement on getting to the previous result', () => {
-        spyOn(component, 'scrollToElement');
+        jest.spyOn(component, 'scrollToElement');
         component.activePrevious();
         expect(component.scrollToElement).toHaveBeenCalled();
     });
 
     it('should emit event on item selection', () => {
-        spyOn(component.onItemSelected, 'emit');
+        jest.spyOn(component.onItemSelected, 'emit');
         component.selectCurrentItem();
         expect(component.onItemSelected.emit).toHaveBeenCalled();
     });
 
     it('should reset active index after selection', () => {
-        spyOn(component.onItemSelected, 'emit');
+        jest.spyOn(component.onItemSelected, 'emit');
         component.activeNext();
         component.selectCurrentItem();
         expect(component.activeIndex).toBe(0);

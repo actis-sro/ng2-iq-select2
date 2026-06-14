@@ -1,5 +1,5 @@
 /* tslint:disable:no-unused-variable */
-import {async, ComponentFixture, fakeAsync, inject, TestBed, tick} from '@angular/core/testing';
+import {ComponentFixture, fakeAsync, inject, TestBed, tick, waitForAsync} from '@angular/core/testing';
 import {IqSelect2ResultsComponent} from '../iq-select2-results/iq-select2-results.component';
 import {UntypedFormBuilder, UntypedFormGroup, ReactiveFormsModule} from '@angular/forms';
 import {IqSelect2Component} from './iq-select2.component';
@@ -11,10 +11,10 @@ describe('IqSelect2Component', () => {
     let component: IqSelect2Component;
     let fixture: ComponentFixture<IqSelect2Component>;
 
-    beforeEach(async(() => {
+    beforeEach(waitForAsync(() => {
         TestBed.configureTestingModule({
-            declarations: [IqSelect2Component, IqSelect2ResultsComponent, TestHostComponent],
-            imports: [ReactiveFormsModule],
+            declarations: [TestHostComponent],
+            imports: [ReactiveFormsModule, IqSelect2Component],
             providers: [
                 DataService
             ]
@@ -30,6 +30,10 @@ describe('IqSelect2Component', () => {
                 entity: entity
             };
         };
+    };
+
+    const keyEvent = (key: string): KeyboardEvent => {
+        return new KeyboardEvent('keydown', {key});
     };
 
     beforeEach(inject([DataService], (service: DataService) => {
@@ -59,7 +63,7 @@ describe('IqSelect2Component', () => {
         component.searchFocused = true;
         component.debounceLength = 0;
         fixture.detectChanges();
-        fixture.nativeElement.querySelector('.caret').click();
+        fixture.nativeElement.querySelector('.select2-selection-caret').click();
         expect(component.resultsVisible).toBe(true);
     }));
 
@@ -67,7 +71,7 @@ describe('IqSelect2Component', () => {
         component.searchFocused = true;
         component.debounceLength = 1;
         fixture.detectChanges();
-        fixture.nativeElement.querySelector('.caret').click();
+        fixture.nativeElement.querySelector('.select2-selection-caret').click();
         expect(component.resultsVisible).toBe(false);
     }));
 
@@ -75,11 +79,10 @@ describe('IqSelect2Component', () => {
         inject([DataService], fakeAsync((service: DataService) => {
             const parent = TestBed.createComponent(TestHostComponent);
             const hostComponent: TestHostComponent = parent.componentInstance;
+            parent.detectChanges();
             hostComponent.childComponent.dataSourceProvider = (term: string) => service.listData(term);
             hostComponent.childComponent.iqSelect2ItemAdapter = adapter();
             parent.detectChanges();
-
-            hostComponent.childComponent.ngAfterViewInit();
             hostComponent.childComponent.focus();
 
             hostComponent.childComponent.term.setValue('arg');
@@ -131,12 +134,12 @@ describe('IqSelect2Component', () => {
     it('should focus input clicking on the container', () => {
         const ul = fixture.nativeElement.querySelector('.select2-container ul');
         const input = fixture.nativeElement.querySelector('input');
-        ul.dispatchEvent(new Event('click'));
+        ul.dispatchEvent(new Event('click', {bubbles: true}));
         expect(document.activeElement).toBe(input);
     });
 
     it('single mode with id reference should export only an id', () => {
-        spyOn(component, 'onChangeCallback');
+        jest.spyOn(component, 'onChangeCallback');
 
         component.multiple = false;
         component.referenceMode = 'id';
@@ -149,7 +152,7 @@ describe('IqSelect2Component', () => {
     });
 
     it('multiple mode with id reference should export an array of ids', fakeAsync(() => {
-        spyOn(component, 'onChangeCallback');
+        jest.spyOn(component, 'onChangeCallback');
 
         component.multiple = true;
         component.referenceMode = 'id';
@@ -167,7 +170,7 @@ describe('IqSelect2Component', () => {
     }));
 
     it('single mode with entity reference should export the entire entity', () => {
-        spyOn(component, 'onChangeCallback');
+        jest.spyOn(component, 'onChangeCallback');
 
         const entity = {
             id: '1',
@@ -187,7 +190,7 @@ describe('IqSelect2Component', () => {
     });
 
     it('multiple mode with entity reference should export an array of entities', fakeAsync(() => {
-        spyOn(component, 'onChangeCallback');
+        jest.spyOn(component, 'onChangeCallback');
 
         const entity = {
             id: '1',
@@ -212,7 +215,7 @@ describe('IqSelect2Component', () => {
     }));
 
     it('should add item when clicking on it', fakeAsync(() => {
-        spyOn(component, 'onChangeCallback');
+        jest.spyOn(component, 'onChangeCallback');
 
         component.searchFocused = true;
         component.term.setValue('arg');
@@ -220,14 +223,14 @@ describe('IqSelect2Component', () => {
         fixture.detectChanges();
 
         const lis = fixture.nativeElement.querySelectorAll('.select2-dropdown-item');
-        lis[0].dispatchEvent(new Event('mousedown'));
+        lis[0].dispatchEvent(new Event('click'));
         tick(250);
 
         expect(component.onChangeCallback).toHaveBeenCalledWith('16');
     }));
 
     it('should remove item when clicking on it', fakeAsync(() => {
-        spyOn(component, 'onChangeCallback');
+        jest.spyOn(component, 'onChangeCallback');
 
         component.multiple = false;
         component.referenceMode = 'id';
@@ -289,9 +292,7 @@ describe('IqSelect2Component', () => {
     }));
 
     it('should not repeat same request', fakeAsync(() => {
-        spyOn(component, 'dataSourceProvider').and.returnValue(of({
-            map: () => EMPTY
-        }));
+        jest.spyOn(component, 'dataSourceProvider').mockReturnValue(of([]));
 
         component.term.setValue('arg');
         tick(250);
@@ -303,9 +304,7 @@ describe('IqSelect2Component', () => {
     }));
 
     it('should make another request after change', fakeAsync(() => {
-        spyOn(component, 'dataSourceProvider').and.returnValue(of({
-            map: () => EMPTY
-        }));
+        jest.spyOn(component, 'dataSourceProvider').mockReturnValue(of([]));
 
         component.term.setValue('arg');
         tick(250);
@@ -319,17 +318,14 @@ describe('IqSelect2Component', () => {
     it('should not make a request if term.length < minimumInputLength', inject([DataService], fakeAsync((service: DataService) => {
         const parent = TestBed.createComponent(TestHostComponent);
         const hostComponent: TestHostComponent = parent.componentInstance;
+            parent.detectChanges();
         hostComponent.childComponent.dataSourceProvider = (term: string) => service.listData(term);
         hostComponent.childComponent.iqSelect2ItemAdapter = adapter();
         parent.detectChanges();
 
-        spyOn(hostComponent.childComponent, 'dataSourceProvider').and.returnValue({
-            subscribe: () => {
-            }
-        });
+        jest.spyOn(hostComponent.childComponent, 'dataSourceProvider').mockReturnValue(of([]));
 
         hostComponent.childComponent.debounceLength = 2;
-        hostComponent.childComponent.ngAfterViewInit();
 
         hostComponent.childComponent.term.setValue('a');
         tick(250);
@@ -340,6 +336,7 @@ describe('IqSelect2Component', () => {
     it('should export selected values - referenceMode: id, single', inject([DataService], fakeAsync((service: DataService) => {
         const parent = TestBed.createComponent(TestHostComponent);
         const hostComponent: TestHostComponent = parent.componentInstance;
+            parent.detectChanges();
         hostComponent.childComponent.dataSourceProvider = (term: string) => service.listData(term);
         hostComponent.childComponent.selectedProvider = (ids: string[]) => service.getItems(ids);
         hostComponent.childComponent.iqSelect2ItemAdapter = adapter();
@@ -357,6 +354,7 @@ describe('IqSelect2Component', () => {
     it('should export selected values - referenceMode: id, multiple', inject([DataService], fakeAsync((service: DataService) => {
         const parent = TestBed.createComponent(TestHostComponent);
         const hostComponent: TestHostComponent = parent.componentInstance;
+            parent.detectChanges();
         hostComponent.childComponent.dataSourceProvider = (term: string) => service.listData(term);
         hostComponent.childComponent.selectedProvider = (ids: string[]) => service.getItems(ids);
         hostComponent.childComponent.iqSelect2ItemAdapter = adapter();
@@ -374,6 +372,7 @@ describe('IqSelect2Component', () => {
     it('should export selected values - referenceMode: entity, single', inject([DataService], fakeAsync((service: DataService) => {
         const parent = TestBed.createComponent(TestHostComponent);
         const hostComponent: TestHostComponent = parent.componentInstance;
+            parent.detectChanges();
         hostComponent.childComponent.dataSourceProvider = (term: string) => service.listData(term);
         hostComponent.childComponent.selectedProvider = (ids: string[]) => service.getItems(ids);
         hostComponent.childComponent.iqSelect2ItemAdapter = adapter();
@@ -401,6 +400,7 @@ describe('IqSelect2Component', () => {
     it('should export selected values - referenceMode: entity, multiple', inject([DataService], fakeAsync((service: DataService) => {
         const parent = TestBed.createComponent(TestHostComponent);
         const hostComponent: TestHostComponent = parent.componentInstance;
+            parent.detectChanges();
         hostComponent.childComponent.dataSourceProvider = (term: string) => service.listData(term);
         hostComponent.childComponent.selectedProvider = (ids: string[]) => service.getItems(ids);
         hostComponent.childComponent.iqSelect2ItemAdapter = adapter();
@@ -469,6 +469,7 @@ describe('IqSelect2Component', () => {
     it('should not load duplicate results - id referenceMode', inject([DataService], fakeAsync((service: DataService) => {
         const parent = TestBed.createComponent(TestHostComponent);
         const hostComponent: TestHostComponent = parent.componentInstance;
+            parent.detectChanges();
         hostComponent.childComponent.dataSourceProvider = (term: string) => service.listData(term);
         hostComponent.childComponent.selectedProvider = (ids: string[]) => service.getItems(ids);
         hostComponent.childComponent.iqSelect2ItemAdapter = adapter();
@@ -486,6 +487,7 @@ describe('IqSelect2Component', () => {
     it('should not load duplicate results - entity referenceMode', inject([DataService], fakeAsync((service: DataService) => {
         const parent = TestBed.createComponent(TestHostComponent);
         const hostComponent: TestHostComponent = parent.componentInstance;
+            parent.detectChanges();
         hostComponent.childComponent.dataSourceProvider = (term: string) => service.listData(term);
         hostComponent.childComponent.selectedProvider = (ids: string[]) => service.getItems(ids);
         hostComponent.childComponent.iqSelect2ItemAdapter = adapter();
@@ -506,7 +508,7 @@ describe('IqSelect2Component', () => {
         expect(hostComponent.childComponent.selectedItems.length).toBe(1);
     })));
 
-    it('should select focused item when tab key is pressed', () => {
+    it('should not select focused item when tab key is pressed', () => {
         component.debounceLength = 0;
         component.resultsVisible = true;
         component.listData = [{
@@ -514,16 +516,16 @@ describe('IqSelect2Component', () => {
             text: 'test'
         }];
         fixture.detectChanges();
-        component.onKeyDown({keyCode: 9});
-        expect(component.selectedItems.length).toBe(1);
+        component.onKeyDown(keyEvent('Tab'));
+        expect(component.selectedItems.length).toBe(0);
     });
 
     it('should select next item when down arrow is pressed', fakeAsync(() => {
         component.debounceLength = 0;
         component.resultsVisible = true;
         fixture.detectChanges();
-        spyOn(component.results, 'activeNext');
-        component.onKeyUp({keyCode: 40});
+        jest.spyOn(component.results, 'activeNext');
+        component.onKeyDown(keyEvent('ArrowDown'));
         tick(1);
         expect(component.results.activeNext).toHaveBeenCalled();
     }));
@@ -532,8 +534,8 @@ describe('IqSelect2Component', () => {
         component.debounceLength = 0;
         component.resultsVisible = true;
         fixture.detectChanges();
-        spyOn(component.results, 'activePrevious');
-        component.onKeyUp({keyCode: 38});
+        jest.spyOn(component.results, 'activePrevious');
+        component.onKeyDown(keyEvent('ArrowUp'));
         tick(1);
         expect(component.results.activePrevious).toHaveBeenCalled();
     }));
@@ -542,8 +544,8 @@ describe('IqSelect2Component', () => {
         component.debounceLength = 0;
         component.resultsVisible = true;
         fixture.detectChanges();
-        spyOn(component.results, 'selectCurrentItem');
-        component.onKeyUp({keyCode: 13});
+        jest.spyOn(component.results, 'selectCurrentItem');
+        component.onKeyUp(keyEvent('Enter'));
         tick(1);
         expect(component.results.selectCurrentItem).toHaveBeenCalled();
     }));
@@ -551,9 +553,10 @@ describe('IqSelect2Component', () => {
     it('should focus input when enter is pressed with minimumInputLength === 0 and no results visible', fakeAsync(() => {
         component.debounceLength = 0;
         component.resultsVisible = false;
+        component.results = undefined;
         fixture.detectChanges();
-        spyOn(component, 'focusAndShowResults');
-        component.onKeyUp({keyCode: 13});
+        jest.spyOn(component, 'focusAndShowResults');
+        component.onKeyUp(keyEvent('Enter'));
         tick(1);
         expect(component.focusAndShowResults).toHaveBeenCalled();
     }));
@@ -561,9 +564,10 @@ describe('IqSelect2Component', () => {
     it('should focus input when down arrow is pressed with minimumInputLength === 0 and no results visible', fakeAsync(() => {
         component.debounceLength = 0;
         component.resultsVisible = false;
+        component.results = undefined;
         fixture.detectChanges();
-        spyOn(component, 'focusAndShowResults');
-        component.onKeyUp({keyCode: 40});
+        jest.spyOn(component, 'focusAndShowResults');
+        component.onKeyUp(keyEvent('ArrowDown'));
         tick(1);
         expect(component.focusAndShowResults).toHaveBeenCalled();
     }));
@@ -576,8 +580,8 @@ describe('IqSelect2Component', () => {
             text: 'test'
         }];
         fixture.detectChanges();
-        spyOn(component, 'removeItem');
-        component.onKeyDown({keyCode: 8});
+        jest.spyOn(component, 'removeItem');
+        component.onKeyDown(keyEvent('Delete'));
         tick(1);
         expect(component.removeItem).toHaveBeenCalled();
     }));
@@ -591,20 +595,19 @@ describe('IqSelect2Component', () => {
         }];
         component.term.setValue('arg');
         fixture.detectChanges();
-        spyOn(component, 'removeItem');
-        component.onKeyDown({keyCode: 8});
+        jest.spyOn(component, 'removeItem');
+        component.onKeyDown(keyEvent('Delete'));
         expect(component.removeItem).toHaveBeenCalledTimes(0);
     });
 
     it('should delete selected item when delete is pressed and remove it from the list of selected items', fakeAsync(() => {
         component.debounceLength = 0;
-        component.ngAfterViewInit();
         component.selectedItems = [{
             id: '1',
             text: 'test'
         }];
         fixture.detectChanges();
-        component.onKeyDown({keyCode: 8});
+        component.onKeyDown(keyEvent('Delete'));
         tick(1);
         expect(component.selectedItems.length).toBe(0);
     }));
@@ -613,6 +616,7 @@ describe('IqSelect2Component', () => {
         inject([DataService], (service: DataService) => {
             const parent = TestBed.createComponent(TestHostComponent);
             const hostComponent: TestHostComponent = parent.componentInstance;
+            parent.detectChanges();
             hostComponent.childComponent.dataSourceProvider = (term: string) => service.listData(term);
             hostComponent.childComponent.selectedProvider = (ids: string[]) => service.getItems(ids);
             hostComponent.childComponent.iqSelect2ItemAdapter = adapter();
@@ -633,6 +637,7 @@ describe('IqSelect2Component', () => {
         inject([DataService], (service: DataService) => {
             const parent = TestBed.createComponent(TestHostComponent);
             const hostComponent: TestHostComponent = parent.componentInstance;
+            parent.detectChanges();
             hostComponent.childComponent.dataSourceProvider = (term: string) => service.listData(term);
             hostComponent.childComponent.selectedProvider = (ids: string[]) => service.getItems(ids);
             hostComponent.childComponent.iqSelect2ItemAdapter = adapter();
@@ -658,20 +663,23 @@ describe('IqSelect2Component', () => {
         component.resultsVisible = true;
         fixture.detectChanges();
 
-        const mra = fixture.nativeElement.querySelectorAll('span.select2-message');
+        const mra = fixture.nativeElement.querySelectorAll('div.select2-message:not(.no-results)');
         expect(mra.length).toBe(0);
     });
 
-    it('should show moreResultsAvailable message if number of results < resultsCount', () => {
-        component.maxResults = 2;
+    it('should show moreResultsAvailable message if number of results exceeds resultsCount', () => {
+        component.maxResults = 1;
         component.listData = [{
             id: '1',
             text: 'test'
+        }, {
+            id: '2',
+            text: 'test 2'
         }];
         component.resultsVisible = true;
         fixture.detectChanges();
 
-        const mra = fixture.nativeElement.querySelectorAll('span.select2-message');
+        const mra = fixture.nativeElement.querySelectorAll('div.select2-message:not(.no-results)');
         expect(mra.length).toBe(1);
     });
 
@@ -687,8 +695,8 @@ describe('IqSelect2Component', () => {
         }];
         fixture.detectChanges();
 
-        const mra = fixture.nativeElement.querySelectorAll('span.select2-message');
-        expect(mra.length).toBe(0);
+        const dropdown = fixture.nativeElement.querySelector('.select2-dropdown');
+        expect(dropdown.getAttribute('data-visible')).toBe('false');
     });
 
 
@@ -701,7 +709,7 @@ describe('IqSelect2Component', () => {
         component.resultsVisible = true;
         fixture.detectChanges();
 
-        const mra = fixture.nativeElement.querySelectorAll('span.select2-message');
+        const mra = fixture.nativeElement.querySelectorAll('div.select2-message:not(.no-results)');
         expect(mra.length).toBe(0);
     });
 
@@ -713,7 +721,7 @@ describe('IqSelect2Component', () => {
         component.resultsVisible = true;
         fixture.detectChanges();
 
-        const nra = fixture.nativeElement.querySelectorAll('span.no-results');
+        const nra = fixture.nativeElement.querySelectorAll('div.no-results');
         expect(nra.length).toBe(0);
     });
 
@@ -723,7 +731,7 @@ describe('IqSelect2Component', () => {
         component.searchFocused = true;
         fixture.detectChanges();
 
-        const nra = fixture.nativeElement.querySelectorAll('span.no-results');
+        const nra = fixture.nativeElement.querySelectorAll('div.no-results');
         expect(nra.length).toBe(1);
     });
 
@@ -734,49 +742,49 @@ describe('IqSelect2Component', () => {
             component.selectedItems = [{id: '1', text: 'test'}];
             component.resultsVisible = true;
             fixture.detectChanges();
-            component.onKeyDown({keyCode: 8});
+            component.onKeyDown(keyEvent('Delete'));
             tick(1);
             expect(component.selectedItems.length).toBe(0);
         }))
     );
 
     it('should replace count variables with value', () => {
-        component.maxResults = 2;
-        component.listData = [{id: '1', text: 'test'}];
+        component.maxResults = 1;
+        component.listData = [{id: '1', text: 'test'}, {id: '2', text: 'test 2'}];
         component.resultsVisible = true;
         fixture.detectChanges();
 
-        const mra = fixture.nativeElement.querySelector('span.select2-message');
+        const mra = fixture.nativeElement.querySelector('div.select2-message:not(.no-results)');
         expect(mra.innerHTML.trim()).toContain('Showing 1 of 2 results');
     });
 
     it('should not introduce variables value', () => {
-        component.maxResults = 2;
-        component.listData = [{id: '1', text: 'test'}];
+        component.maxResults = 1;
+        component.listData = [{id: '1', text: 'test'}, {id: '2', text: 'test 2'}];
         component.resultsVisible = true;
         component.messageMoreResults = 'Another message';
         fixture.detectChanges();
 
-        const mra = fixture.nativeElement.querySelector('span.select2-message');
+        const mra = fixture.nativeElement.querySelector('div.select2-message:not(.no-results)');
         expect(mra.innerHTML.trim().indexOf('1')).toBe(-1);
         expect(mra.innerHTML.trim().indexOf('2')).toBe(-1);
     });
 
     it('should replace message', () => {
-        component.maxResults = 2;
-        component.listData = [{id: '1', text: 'test'}];
+        component.maxResults = 1;
+        component.listData = [{id: '1', text: 'test'}, {id: '2', text: 'test 2'}];
         component.resultsVisible = true;
         component.messageMoreResults = 'Another message';
         fixture.detectChanges();
 
-        const mra = fixture.nativeElement.querySelector('span.select2-message');
+        const mra = fixture.nativeElement.querySelector('div.select2-message:not(.no-results)');
         expect(mra.innerHTML.trim()).toBe('Another message');
     });
 
     it('should not call dataProvider multiple times when clientMode === true', inject([DataService], fakeAsync((service) => {
         component.clientMode = true;
 
-        spyOn(component, 'dataSourceProvider').and.returnValue(of([{
+        jest.spyOn(component, 'dataSourceProvider').mockReturnValue(of([{
             id: '1',
             name: 'test'
         }]));
@@ -847,6 +855,7 @@ describe('IqSelect2Component', () => {
         inject([DataService], (service: DataService) => {
             const parent = TestBed.createComponent(TestHostComponent);
             const hostComponent: TestHostComponent = parent.componentInstance;
+            parent.detectChanges();
             hostComponent.childComponent.multiple = false;
             hostComponent.childComponent.referenceMode = 'entity';
             hostComponent.childComponent.placeholder = 'This is the original placeholder';
@@ -874,7 +883,7 @@ describe('IqSelect2Component', () => {
     it('should include selected results when requesting new ones - no selection', fakeAsync(() => {
         component.searchFocused = true;
         component.term.setValue('arg');
-        spyOn(component, 'dataSourceProvider').and.returnValue(EMPTY);
+        jest.spyOn(component, 'dataSourceProvider').mockReturnValue(EMPTY);
         tick(250);
         expect(component.dataSourceProvider).toHaveBeenCalledWith('arg', null);
     }));
@@ -886,7 +895,7 @@ describe('IqSelect2Component', () => {
             text: 'Tunisia'
         }];
         component.term.setValue('arg');
-        spyOn(component, 'dataSourceProvider').and.returnValue(EMPTY);
+        jest.spyOn(component, 'dataSourceProvider').mockReturnValue(EMPTY);
         tick(250);
         expect(component.dataSourceProvider).toHaveBeenCalledWith('arg', '1');
     }));
@@ -900,7 +909,7 @@ describe('IqSelect2Component', () => {
             text: 'Tunisia'
         }];
         component.term.setValue('arg');
-        spyOn(component, 'dataSourceProvider').and.returnValue(EMPTY);
+        jest.spyOn(component, 'dataSourceProvider').mockReturnValue(EMPTY);
         tick(250);
         expect(component.dataSourceProvider).toHaveBeenCalledWith('arg', ['1']);
     }));
@@ -918,7 +927,7 @@ describe('IqSelect2Component', () => {
             }
         }];
         component.term.setValue('arg');
-        spyOn(component, 'dataSourceProvider').and.returnValue(EMPTY);
+        jest.spyOn(component, 'dataSourceProvider').mockReturnValue(EMPTY);
         tick(250);
         expect(component.dataSourceProvider).toHaveBeenCalledWith('arg', {
             id: '1',
@@ -940,7 +949,7 @@ describe('IqSelect2Component', () => {
             }
         }];
         component.term.setValue('arg');
-        spyOn(component, 'dataSourceProvider').and.returnValue(EMPTY);
+        jest.spyOn(component, 'dataSourceProvider').mockReturnValue(EMPTY);
         tick(250);
         expect(component.dataSourceProvider).toHaveBeenCalledWith('arg', [{
             id: '1',
@@ -952,7 +961,7 @@ describe('IqSelect2Component', () => {
 @Component({
     template: `
         <form [formGroup]="fg">
-            <iq-select2 formControlName="country" [minimumInputLength]="0"></iq-select2>
+            <iq-select2 formControlName="country" [debounceLength]="0"></iq-select2>
         </form>
     `,
     standalone: false

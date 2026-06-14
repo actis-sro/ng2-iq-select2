@@ -1,9 +1,7 @@
 /* tslint:disable:no-unused-variable */
-import {async, ComponentFixture, fakeAsync, inject, TestBed, tick} from '@angular/core/testing';
+import {ComponentFixture, fakeAsync, inject, TestBed, tick, waitForAsync} from '@angular/core/testing';
 import {IqSelect2ResultsComponent} from '../iq-select2-results/iq-select2-results.component';
 import {UntypedFormBuilder, UntypedFormGroup, ReactiveFormsModule} from '@angular/forms';
-import {BaseRequestOptions, Http} from '@angular/http';
-import {MockBackend} from '@angular/http/testing';
 import {Component, OnInit, ViewChild} from '@angular/core';
 import {IqSelect2Component} from '../iq-select2/iq-select2.component';
 import {IqSelect2TemplateDirective} from './iq-select2-template.directive';
@@ -13,20 +11,13 @@ describe('IqSelect2TemplateDirective', () => {
     let component: IqSelect2Component;
     let parentFixture: ComponentFixture<TestHostComponent>;
 
-    beforeEach(async(() => {
+    beforeEach(waitForAsync(() => {
         TestBed.configureTestingModule({
-            declarations: [IqSelect2Component, IqSelect2TemplateDirective, IqSelect2ResultsComponent, TestHostComponent],
-            imports: [ReactiveFormsModule],
+            declarations: [TestHostComponent],
+            imports: [ReactiveFormsModule, IqSelect2Component, IqSelect2TemplateDirective],
             providers: [
-                DataService,
-                MockBackend,
-                BaseRequestOptions, {
-                    provide: Http,
-                    useFactory: (mockBackend, options) => {
-                        return new Http(mockBackend, options);
-                    },
-                    deps: [MockBackend, BaseRequestOptions]
-                }]
+                DataService
+            ]
         }).compileComponents();
     }));
 
@@ -42,6 +33,7 @@ describe('IqSelect2TemplateDirective', () => {
 
     beforeEach(inject([DataService], (service: DataService) => {
         parentFixture = TestBed.createComponent(TestHostComponent);
+        parentFixture.detectChanges();
         const parentComponent = parentFixture.componentInstance;
         component = parentComponent.childComponent;
         component.dataSourceProvider = (term: string) => service.listData(term);
@@ -58,7 +50,7 @@ describe('IqSelect2TemplateDirective', () => {
         component.term.setValue('tunisia');
         tick(250);
         parentFixture.detectChanges();
-        const container: NodeSelector = parentFixture.nativeElement.querySelector('.select2-dropdown-item.active');
+        const container: Element = parentFixture.nativeElement.querySelector('.select2-dropdown-item.active');
         // query dom based on class from custom template
         expect(container.querySelector('.color').innerHTML).toBe('#fcd217');
         expect(container.querySelector('.code').innerHTML).toBe('TN');
@@ -68,7 +60,7 @@ describe('IqSelect2TemplateDirective', () => {
 @Component({
     template: `
         <form [formGroup]="fg">
-            <iq-select2 [minimumInputLength]="0">
+            <iq-select2 [debounceLength]="0">
                 <div *iq-select2-template="let item = $entity; let i = $index">
                     ({{i}}) <span class="code">{{item.code}}</span> - <span class="color">{{item.color}}</span>
                 </div>

@@ -6,7 +6,6 @@ const jestConfig: Config = {
     '^.+\\.ts?$': 'ts-jest',
   },
   transformIgnorePatterns: ['<rootDir>/node_modules/'],
-  globalSetup: 'jest-preset-angular/global-setup',
   reporters: [
     'default',
   ],

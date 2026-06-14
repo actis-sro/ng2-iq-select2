@@ -139,7 +139,7 @@
                     "options": {
                         "main": "projects/ng2-iq-select2/src/test.ts",
                         "tsConfig": "projects/ng2-iq-select2/tsconfig.spec.json",
-                        "jestConfig": "projects/ng2-iq-select2/jest.config.js"
+                        "jestConfig": "projects/ng2-iq-select2/jest.config.ts"
                     }
                 },
                 "lint": {

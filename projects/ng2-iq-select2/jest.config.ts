@@ -2,8 +2,9 @@ import { Config } from 'jest';
 const jestConfig: Config = {
 
   preset: 'jest-preset-angular',
+  testEnvironment: 'jest-preset-angular/environments/jest-jsdom-env',
   setupFilesAfterEnv: ['<rootDir>/setup-jest.ts'],
-  globalSetup: 'jest-preset-angular/global-setup',
+  testMatch: ['<rootDir>/src/**/*.spec.ts'],
   reporters: [
     'default',
   ],
