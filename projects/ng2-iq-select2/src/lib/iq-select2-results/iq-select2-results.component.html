@@ -1,17 +1,25 @@
 <div #container class="select2-dropdown" [attr.data-visible]="resultsVisible">
-  <div *ngIf="maxResults && items.length + selectedItems.length > maxResults" class="select2-message">
-    {{getCountMessage()}}
-  </div>
+  @if (maxResults && items.length + selectedItems.length > maxResults) {
+    <div class="select2-message">
+      {{getCountMessage()}}
+    </div>
+  }
 
-  <div *ngIf="items.length === 0" class="select2-message no-results">
-    {{messageNoResults}}
-  </div>
+  @if (items.length === 0) {
+    <div class="select2-message no-results">
+      {{messageNoResults}}
+    </div>
+  }
 
-  <div *ngFor="let item of items | slice : 0 : maxResults; let i = index;" id="item_{{i}}" [attr.data-item-id]="item.id" [title]="item.text"
-       class="select2-dropdown-item" [class.selected]="isSelected(item)" [class.active]="i === activeIndex"
-       (click)="selectItem(item)" (mouseover)="onMouseOver(i)" (mouseenter)="onHovering($event)"
-  >
-    <ng-container [ngTemplateOutlet]="templateRef" [ngTemplateOutletContext]="{$item:item, $entity: item.entity, $id:item.id, $index:i}"></ng-container>
-    <ng-container *ngIf="!templateRef">{{item.text}}</ng-container>
-  </div>
+  @for (item of items | slice : 0 : maxResults; track item; let i = $index) {
+    <div id="item_{{i}}" [attr.data-item-id]="item.id" [title]="item.text"
+      class="select2-dropdown-item" [class.selected]="isSelected(item)" [class.active]="i === activeIndex"
+      (click)="selectItem(item)" (mouseover)="onMouseOver(i)" (mouseenter)="onHovering($event)"
+      >
+      <ng-container [ngTemplateOutlet]="templateRef" [ngTemplateOutletContext]="{$item:item, $entity: item.entity, $id:item.id, $index:i}"></ng-container>
+      @if (!templateRef) {
+        {{item.text}}
+      }
+    </div>
+  }
 </div>
