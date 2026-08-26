@@ -3,10 +3,10 @@ import {Observable, of, timer} from 'rxjs';
 import {map} from 'rxjs/operators';
 
 export class Country {
-    id: string;
-    name: string;
-    code: string;
-    color: string;
+    id!: string;
+    name!: string;
+    code!: string;
+    color!: string;
 }
 
 @Injectable()

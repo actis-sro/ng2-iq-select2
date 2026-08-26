@@ -13,13 +13,13 @@ import {IqSelect2Component} from '../../projects/ng2-iq-select2/src/lib/iq-selec
     standalone: false
 })
 export class AppComponent implements OnInit {
-    public form: UntypedFormGroup;
-    public listItems: (term: string) => Observable<Country[]>;
-    public listItemsMax: (term: string, ids: string[]) => Observable<Country[]>;
-    public getItems: (ids: string[]) => Observable<Country[]>;
-    public entityToIqSelect2Item: (entity: Country) => IqSelect2Item;
-    public count: number;
-    @ViewChild('countrySingle') countrySingle: IqSelect2Component;
+    public form!: UntypedFormGroup;
+    public listItems!: (term: string) => Observable<Country[]>;
+    public listItemsMax!: (term: string, ids?: any[]) => Observable<Country[]>;
+    public getItems!: (ids: string[]) => Observable<Country[]>;
+    public entityToIqSelect2Item!: (entity: Country) => IqSelect2Item;
+    public count!: number;
+    @ViewChild('countrySingle') countrySingle!: IqSelect2Component;
 
     constructor(private dataService: DataService,
                 private formBuilder: UntypedFormBuilder) {
@@ -72,7 +72,7 @@ export class AppComponent implements OnInit {
 
     private initializeCountryIqSelect2() {
         this.listItems = (term: string) => this.dataService.listData(term);
-        this.listItemsMax = (term: string, ids: string[]) => {
+        this.listItemsMax = (term: string, ids?: any[]) => {
             const selectedCount = ids ? ids.length : 0;
             return this.dataService
                 .listDataMax(term, 3 + selectedCount)

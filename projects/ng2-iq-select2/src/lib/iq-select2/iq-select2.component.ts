@@ -3,7 +3,7 @@ import {CommonModule} from '@angular/common';
 import {IqSelect2Item} from './iq-select2-item';
 import {IqSelect2ResultsComponent} from '../iq-select2-results/iq-select2-results.component';
 import {ControlValueAccessor, NG_VALUE_ACCESSOR, UntypedFormControl, ReactiveFormsModule} from '@angular/forms';
-import {Observable, of} from 'rxjs';
+import {merge, Observable, of, Subject, Subscription} from 'rxjs';
 import {debounceTime, distinctUntilChanged, filter, map, mergeMap, switchMap, tap} from 'rxjs/operators';
 import Messages from "./messages";
 
@@ -27,16 +27,16 @@ const KEY_CODE_DELETE = 'Delete';
 })
 export class IqSelect2Component implements AfterViewInit, ControlValueAccessor, OnDestroy {
 
-  @Input() dataSourceProvider: (term: string, selected?: any[]) => Observable<any[]>;
-  @Input() selectedProvider: (ids: string[]) => Observable<any[]>;
-  @Input() iqSelect2ItemAdapter: (entity: any) => IqSelect2Item;
+  @Input() dataSourceProvider!: (term: string, selected?: any[]) => Observable<any[]>;
+  @Input() selectedProvider!: (ids: string[]) => Observable<any[]>;
+  @Input() iqSelect2ItemAdapter!: (entity: any) => IqSelect2Item;
 
   @Input() referenceMode: 'id' | 'entity' = 'id';
   @Input() multiple = false;
-  @Input() inputContainerClass: string;
+  @Input() inputContainerClass!: string;
   @Input() placeholder = '';
   @Input() disabled = false;
-  @Input() maxResults: number;
+  @Input() maxResults!: number;
   @Input() clientMode = false;
   @Input() badgeColor = 'info';
   @Input() wrapSelectedText = 'nowrap'
@@ -53,16 +53,16 @@ export class IqSelect2Component implements AfterViewInit, ControlValueAccessor, 
   @Output() onSelect: EventEmitter<IqSelect2Item> = new EventEmitter<IqSelect2Item>();
   @Output() onRemove: EventEmitter<IqSelect2Item> = new EventEmitter<IqSelect2Item>();
 
-  @ViewChild('selectContainer') container: ElementRef
-  @ViewChild('termInput') termInput: ElementRef
-  @ViewChild('results') results: IqSelect2ResultsComponent;
+  @ViewChild('selectContainer') container!: ElementRef
+  @ViewChild('termInput') termInput!: ElementRef
+  @ViewChild('results') results?: IqSelect2ResultsComponent;
 
-  templateRef: TemplateRef<any>;
+  templateRef!: TemplateRef<any>;
   term = new UntypedFormControl();
   resultsVisible = false;
   searchFocused = false;
   listData: IqSelect2Item[] = []
-  fullDataList: IqSelect2Item[];
+  fullDataList!: IqSelect2Item[];
   selectedItems: IqSelect2Item[] = [];
   private placeholderSelected = '';
 
@@ -70,6 +70,9 @@ export class IqSelect2Component implements AfterViewInit, ControlValueAccessor, 
   onChangeCallback: (_: any) => void = () => false;
 
   private cdr = inject(ChangeDetectorRef);
+
+  private focusRequest$ = new Subject<string>();
+  private resultsSubscription?: Subscription;
 
   constructor() {
   }
@@ -82,9 +85,11 @@ export class IqSelect2Component implements AfterViewInit, ControlValueAccessor, 
 
   ngOnDestroy(): void {
     document.removeEventListener("mousedown", this.handleClickOutside)
+    this.resultsSubscription?.unsubscribe();
+    this.focusRequest$.complete();
   }
 
-  handleClickOutside = event => {
+  handleClickOutside = (event: Event) => {
     if (!(this.container.nativeElement as HTMLElement).contains(event.target as Node)) {
       this.resultsVisible = false;
       this.searchFocused = false;
@@ -117,11 +122,14 @@ export class IqSelect2Component implements AfterViewInit, ControlValueAccessor, 
   }
 
   private subscribeToChangesAndLoadDataFromObservable() {
-    this.subscribeToResults(this.term.valueChanges.pipe(debounceTime(this.debounceDelay), distinctUntilChanged()));
+    this.subscribeToResults(merge(
+      this.term.valueChanges.pipe(debounceTime(this.debounceDelay), distinctUntilChanged()),
+      this.focusRequest$
+    ));
   }
 
   private subscribeToResults(observable: Observable<string>): void {
-    observable.pipe(
+    this.resultsSubscription = observable.pipe(
       tap(() => this.resultsVisible = false),
       filter((term) => term.length >= this.debounceLength),
       switchMap(term => this.loadDataFromObservable(term)),
@@ -171,7 +179,7 @@ export class IqSelect2Component implements AfterViewInit, ControlValueAccessor, 
   private handleMultipleWithEntities(selectedValues: any) {
     this.selectedItems = [];
 
-    selectedValues.forEach((entity) => {
+    selectedValues.forEach((entity: any) => {
       const item = this.iqSelect2ItemAdapter(entity);
       const ids = this.getSelectedIds();
 
@@ -191,8 +199,8 @@ export class IqSelect2Component implements AfterViewInit, ControlValueAccessor, 
 
   private handleMultipleWithIds(selectedValues: any) {
     if (selectedValues !== undefined && this.selectedProvider !== undefined) {
-      const uniqueIds = [];
-      selectedValues.forEach((id) => {
+      const uniqueIds: any[] = [];
+      selectedValues.forEach((id: any) => {
         if (uniqueIds.indexOf(id) === -1) {
           uniqueIds.push(id);
         }
@@ -266,7 +274,7 @@ export class IqSelect2Component implements AfterViewInit, ControlValueAccessor, 
     }
   }
 
-  private getEntities(): any[] {
+  private getEntities(): any {
     if (this.multiple) {
       return this.selectedItems.map(item => item.entity)
     } else {
@@ -322,7 +330,7 @@ export class IqSelect2Component implements AfterViewInit, ControlValueAccessor, 
   focusAndShowResults() {
     if (!this.disabled) {
       this.termInput.nativeElement.focus();
-      this.subscribeToResults(of(''));
+      this.focusRequest$.next('');
     }
 
     this.searchFocused = !this.disabled;

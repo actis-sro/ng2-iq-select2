@@ -4,7 +4,8 @@ import {IqSelect2ResultsComponent} from '../iq-select2-results/iq-select2-result
 import {UntypedFormBuilder, UntypedFormGroup, ReactiveFormsModule} from '@angular/forms';
 import {IqSelect2Component} from './iq-select2.component';
 import {Component, OnInit, ViewChild} from '@angular/core';
-import {EMPTY, of} from 'rxjs';
+import {EMPTY, of, timer} from 'rxjs';
+import {map} from 'rxjs/operators';
 import {DataService} from '../data.service';
 
 describe('IqSelect2Component', () => {
@@ -933,6 +934,35 @@ describe('IqSelect2Component', () => {
             id: '1',
             countryName: 'Tunisia'
         });
+    }));
+
+    it('should not let a stale click-triggered empty search overwrite a fresher, correctly-filtered search', fakeAsync(() => {
+        let callCount = 0;
+
+        jest.spyOn(component, 'dataSourceProvider').mockImplementation((term: string) => {
+            callCount++;
+
+            // 1st call = the click's of('') request, made slow to simulate it resolving late
+            // 2nd call = the typed, debounced search for 'arg', which should always win
+            return callCount === 1
+                ? timer(1000).pipe(map(() => [{id: '1', name: 'Argentina'}, {id: '2', name: 'Slovakia'}]))
+                : of([{id: '1', name: 'Argentina'}]);
+        });
+
+        component.iqSelect2ItemAdapter = adapter();
+        component.debounceLength = 0;
+        component.searchFocused = true;
+
+        component.focusAndShowResults(); // click to open - slow, unfiltered request in flight
+        component.term.setValue('arg');  // then type - fast, filtered request dispatched shortly after
+
+        tick(250); // the typed search's debounce elapses and resolves first
+        expect(component.listData.length).toBe(1);
+        expect(component.listData[0].text).toBe('Argentina');
+
+        tick(1000); // the slow click-triggered request finally resolves - it must not clobber the above
+        expect(component.listData.length).toBe(1);
+        expect(component.listData[0].text).toBe('Argentina');
     }));
 
     it('should include selected results when requesting new ones - entity selected - multiple', fakeAsync(() => {

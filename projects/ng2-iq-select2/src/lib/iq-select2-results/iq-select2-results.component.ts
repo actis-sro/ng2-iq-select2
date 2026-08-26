@@ -12,15 +12,15 @@ import Messages from "../iq-select2/messages";
 })
 export class IqSelect2ResultsComponent implements OnInit {
 
-  @ViewChild('container') container: ElementRef;
+  @ViewChild('container') container!: ElementRef;
 
   @Input() items: IqSelect2Item[] = []
-  @Input() maxResults: number;
-  @Input() messageMoreResults: string;
-  @Input() messageNoResults: string;
-  @Input() resultsVisible: boolean;
-  @Input() selectedItems: IqSelect2Item[];
-  @Input() templateRef: TemplateRef<any>;
+  @Input() maxResults!: number;
+  @Input() messageMoreResults!: string;
+  @Input() messageNoResults!: string;
+  @Input() resultsVisible!: boolean;
+  @Input() selectedItems!: IqSelect2Item[];
+  @Input() templateRef!: TemplateRef<any>;
   @Output() onItemSelected: EventEmitter<IqSelect2Item> = new EventEmitter();
 
   activeIndex = 0;
@@ -80,11 +80,11 @@ export class IqSelect2ResultsComponent implements OnInit {
     }
   }
 
-  onHovering(event) {
+  onHovering(event: Event) {
     this.usingKeys = false;
   }
 
-  isSelected(currentItem) {
+  isSelected(currentItem: IqSelect2Item) {
     let result = false;
 
     this.selectedItems.forEach(item => {

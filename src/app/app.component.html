@@ -74,7 +74,7 @@
       <label>Country (Single minimumInputLength = 0 using results count and delayed response)</label>
       <iq-select2 inputContainerClass="form-control form-control-sm" placeholder="Start writing..."
         formControlName="countryMin0Count"
-        [dataSourceProvider]="listItems"
+        [dataSourceProvider]="listItemsMax"
         [iqSelect2ItemAdapter]="entityToIqSelect2Item"
         [maxResults]="5"
         [debounceLength]='0' referenceMode='entity' (onSelect)="onSelect($event)"
