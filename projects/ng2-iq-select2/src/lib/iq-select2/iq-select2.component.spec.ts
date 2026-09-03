@@ -304,6 +304,23 @@ describe('IqSelect2Component', () => {
         expect(component.dataSourceProvider).toHaveBeenCalledTimes(1);
     }));
 
+    it('should re-search for the same term after picking an item and retyping it', fakeAsync(() => {
+        jest.spyOn(component, 'dataSourceProvider').mockReturnValue(of([{id: '1', name: 'Argentina'}]));
+        component.iqSelect2ItemAdapter = adapter();
+
+        component.term.setValue('arg');
+        tick(250);
+        expect(component.dataSourceProvider).toHaveBeenCalledTimes(1);
+
+        component.onItemSelected({id: '1', text: 'Argentina'}); // silently resets term to ''
+        tick(250);
+
+        // re-search for the same term - must not be swallowed as a distinctUntilChanged duplicate
+        component.term.setValue('arg');
+        tick(250);
+        expect(component.dataSourceProvider).toHaveBeenCalledTimes(2);
+    }));
+
     it('should make another request after change', fakeAsync(() => {
         jest.spyOn(component, 'dataSourceProvider').mockReturnValue(of([]));
 
@@ -964,6 +981,62 @@ describe('IqSelect2Component', () => {
         expect(component.listData.length).toBe(1);
         expect(component.listData[0].text).toBe('Argentina');
     }));
+
+    // https://github.com/Innqube/ng2-iq-select2/issues - guards against a suspected (but unconfirmed) regression
+    // where setting the input's value via the native setter + a dispatched 'input' event (as opposed to typing
+    // via a real keystroke or calling term.setValue() directly, e.g. Cypress' typeNative() helper) would not
+    // reach the FormControl / debounced search. Verified this DOES work correctly through Angular's
+    // DefaultValueAccessor + zone.js; this test only existed at the component-API level (term.setValue) before.
+    it('should trigger the debounced search when the value is set via the native input setter + a dispatched "input" event',
+        fakeAsync(() => {
+            jest.spyOn(component, 'dataSourceProvider').mockReturnValue(of([]));
+
+            const input: HTMLInputElement = fixture.nativeElement.querySelector('input');
+            const nativeValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!;
+            nativeValueSetter.call(input, 'arg');
+            input.dispatchEvent(new Event('input', {bubbles: true}));
+
+            expect(component.term.value).toBe('arg');
+
+            tick(250);
+
+            expect(component.dataSourceProvider).toHaveBeenCalledWith('arg', null);
+        }));
+
+    // The test above only asserts dataSourceProvider was CALLED (it's mocked away) - it does not prove the
+    // result actually reaches component.listData. This test exercises the full round trip with clientMode
+    // and multiple both left at their defaults (false), matching the exact configuration used by EXevido's
+    // FieldSelectComponent for its non-URL (local, substring-filtered) selects - the shape that was NOT
+    // covered by the earlier clientMode=true multi-select verification.
+    it('should end-to-end filter through an externally-provided dataSourceProvider with clientMode=false, multiple=false',
+        fakeAsync(() => {
+            // mirrors FieldSelectComponent.areStringsSimilar exactly (diacritic/case-insensitive substring match)
+            const areStringsSimilar = (a: string, b: string) => {
+                const pattern = /\p{Diacritic}|-\s/gu;
+                return a.toLowerCase().normalize('NFKD').replace(pattern, '')
+                    .includes(b.toLowerCase().normalize('NFKD').replace(pattern, ''));
+            };
+            const departments = ['Dědictví', 'Exekuce', 'FIN', 'OCOM', 'ODO', 'OPP', 'ORG', 'ORLZ', 'ORR', 'Součinnosti'];
+
+            component.clientMode = false;
+            component.multiple = false;
+            component.dataSourceProvider = (term: string) => of(
+                departments.filter(d => areStringsSimilar(d, term)).map(d => ({key: d, value: d}))
+            );
+            component.iqSelect2ItemAdapter = (entity: any) => ({id: entity.key, text: entity.value, entity});
+            fixture.detectChanges();
+
+            const input: HTMLInputElement = fixture.nativeElement.querySelector('input');
+            const nativeValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!;
+            nativeValueSetter.call(input, 'Součinnosti');
+            input.dispatchEvent(new Event('input', {bubbles: true}));
+
+            tick(250);
+            fixture.detectChanges();
+
+            expect(component.listData.length).toBe(1);
+            expect(component.listData[0].text).toBe('Součinnosti');
+        }));
 
     it('should include selected results when requesting new ones - entity selected - multiple', fakeAsync(() => {
         component.referenceMode = 'entity';

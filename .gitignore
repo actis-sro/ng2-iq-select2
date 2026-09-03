@@ -7,7 +7,7 @@
 /lib
 /aot
 /.angular/cache
-/.jestcache
+.jestcache/
 *.js.map
 *.d.ts
 /src/app/*.js

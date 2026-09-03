@@ -123,7 +123,8 @@ export class IqSelect2Component implements AfterViewInit, ControlValueAccessor, 
 
   private subscribeToChangesAndLoadDataFromObservable() {
     this.subscribeToResults(merge(
-      this.term.valueChanges.pipe(debounceTime(this.debounceDelay), distinctUntilChanged()),
+      // before debounceTime, so the silent patchValue('') reset below can't be debounce-collapsed away
+      this.term.valueChanges.pipe(distinctUntilChanged(), debounceTime(this.debounceDelay)),
       this.focusRequest$
     ));
   }
@@ -251,7 +252,8 @@ export class IqSelect2Component implements AfterViewInit, ControlValueAccessor, 
     }
 
     this.onChangeCallback(this.buildValue());
-    this.term.patchValue('', {emitEvent: false});
+    // emits so distinctUntilChanged sees the reset - see subscribeToChangesAndLoadDataFromObservable()
+    this.term.patchValue('');
 
     if (this.multiple) {
       if (!this.consecutiveMultipleSelection) {
@@ -314,7 +316,7 @@ export class IqSelect2Component implements AfterViewInit, ControlValueAccessor, 
   }
 
   onBlur() {
-    this.term.patchValue('', {emitEvent: false});
+    this.term.patchValue('');
     this.onTouchedCallback();
   }
 
